@@ -14,6 +14,7 @@ WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 vector <unsigned char> file_data;
 HDC hCacheDC = NULL;
+bool IsLoad = false;
 int nScrollOffset = 0;
 
 HANDLE hThread = NULL;
@@ -43,8 +44,9 @@ struct MyData {
     SIZE size;
 };
 
-DWORD WINAPI DoStuff(LPVOID lpParameter)
+DWORD WINAPI MyThread(LPVOID lpParameter)
 {
+    IsLoad = true;
     MyData m = *(MyData*)lpParameter;
 
     RECT Rect;
@@ -99,18 +101,7 @@ void UpdateCache(HWND hWnd, const SIZE& BitmapSize)
     MyData m;
     m.hWnd = hWnd;
     m.size = BitmapSize;
-    hThread = CreateThread(
-        NULL,    
-        0,       
-        DoStuff, // Function Pointer for Thread
-        &m,    // Parameter to pass to the thread
-        0,       
-        NULL);   
-    if (hThread == NULL)
-    {
-        // Thread creation failed.
-        // More details can be retrieved by calling GetLastError()
-    }
+    hThread = CreateThread(NULL, 0, MyThread, &m, 0, NULL);   
 }
 
 
@@ -434,11 +425,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hWnd, &ps);
 
+
         RECT Rect;
         GetClientRect(hWnd, &Rect);
 
-        ::BitBlt(hdc, 0, 0, Rect.right - Rect.left, Rect.bottom - Rect.top, hCacheDC, 0, nScrollOffset, SRCCOPY);
-
+        if (IsLoad) 
+        {
+            TextOut(hdc, (Rect.right - Rect.left) / 2 - 40, (Rect.bottom - Rect.top) / 2 - 10, L"IN PROGRESS!", 12);
+        }
+        else 
+        {
+            ::BitBlt(hdc, 0, 0, Rect.right - Rect.left, Rect.bottom - Rect.top, hCacheDC, 0, nScrollOffset, SRCCOPY);
+        }
         EndPaint(hWnd, &ps);
         }
         break;
